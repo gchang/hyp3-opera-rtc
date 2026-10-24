@@ -1,0 +1,25 @@
+name: hyp3-opera-rtc
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  # For running
+  - python>=3.10
+  - git
+  - pip
+  - gdal>=3.0
+  - shapely
+  - hyp3lib>=4.0.1,<5
+  - boto3
+  - jinja2
+  # For packaging, and testing
+  - setuptools
+  - setuptools_scm
+  - wheel
+  - moto[s3]
+  - responses
+  - pytest
+  - pytest-console-scripts
+  - pytest-cov
+  - pip:
+    - -r requirements-static.txt

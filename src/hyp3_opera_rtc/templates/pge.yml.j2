@@ -1,0 +1,108 @@
+# RunConfig for use with the RTC-S1 PGE v2.1.1
+#
+# Adapted from
+# https://github.com/nasa/opera-sds-pcm/blob/9bd74458957197b0c6680540c8d09c26ffab81df/conf/RunConfig.yaml.L2_RTC_S1.jinja2.tmpl
+RunConfig:
+  Name: OPERA-RTC-S1-PGE-CONFIG
+  Groups:
+    PGE:
+      PGENameGroup:
+        PGEName: RTC_S1_PGE
+      InputFilesGroup:
+        InputFilePaths:
+          - {{  granule_path  }}
+          - {{  orbit_path  }}
+      DynamicAncillaryFilesGroup:
+        AncillaryFileMap:
+          dem_file: {{ dem_path  }}
+          burst_database_file: {{ db_path  }}
+      ProductPathGroup:
+        OutputProductPath: {{  output_dir  }}
+        ScratchPath: {{  scratch_dir  }}
+      PrimaryExecutable:
+        ProductIdentifier: RTC_S1
+        ProductVersion: "1.0"
+        ProgramPath: conda
+        ProgramOptions:
+          - run
+          - --no-capture-output
+          - -n
+          - RTC
+          - rtc_s1.py
+        ErrorCodeBase: 300000
+        SchemaPath: /home/rtc_user/opera/pge/rtc_s1/schema/rtc_s1_sas_schema.yaml
+        IsoTemplatePath: /home/rtc_user/opera/pge/rtc_s1/templates/OPERA_ISO_metadata_L2_RTC_S1_template.xml.jinja2
+        # Date field which designates the point after which the
+        # RTC static layer product(s) should be considered valid.
+        # This field must be provided for RTC-S1 jobs when static layer
+        # generation is enabled (see below), and must be of the form YYYYMMDD
+        DataValidityStartDate: {{ data_validity_start_date }}
+      QAExecutable:
+        Enabled: False
+        ProgramPath:
+        ProgramOptions: []
+      DebugLevelGroup:
+        DebugSwitch: False
+        ExecuteViaShell: False
+    SAS:
+      runconfig:
+        name: rtc_s1_workflow_default
+        groups:
+          pge_name_group:
+            pge_name: RTC_S1_PGE
+          input_file_group:
+            # Required. List of SAFE files (min=1)
+            safe_file_path:
+              - {{  granule_path  }}
+            # Optional. Burst ID to process (empty for all bursts)
+            {% if opera_burst_id %}
+            burst_id:
+              - {{  opera_burst_id  }}
+            {% endif %}
+            # Required. List of orbit (EOF) files (min=1)
+            orbit_file_path:
+              - {{  orbit_path  }}
+            source_data_access: "https://search.asf.alaska.edu/#/?dataset=SENTINEL-1&productTypes=SLC"
+          dynamic_ancillary_file_group:
+            dem_file: {{  dem_path  }}
+            dem_file_description: "Digital Elevation Model (DEM) for the NASA OPERA project version 1.1 (v1.1) based on the Copernicus DEM 30-m and Copernicus 90-m referenced to the WGS84 ellipsoid"
+          static_ancillary_file_group:
+            burst_database_file: {{  db_path  }}
+          product_group:
+            product_version: "1.0"
+            product_path: {{  output_dir  }}
+            scratch_path: {{  scratch_dir  }}
+            output_dir: {{  output_dir  }}
+            product_id:
+            rtc_s1_static_validity_start_date: {{ data_validity_start_date }}
+            product_data_access: "https://search.asf.alaska.edu/#/?dataset=OPERA-S1&productTypes=RTC"
+            static_layers_data_access: "https://search.asf.alaska.edu/#/?dataset=OPERA-S1&productTypes=RTC-STATIC&operaBurstID={burst_id}&end={end_date}"
+            save_bursts: True
+            save_mosaics: False
+            save_browse: True
+            output_imagery_format: COG
+            save_metadata: True
+          primary_executable:
+            product_type: RTC_S1
+          processing:
+            check_ancillary_inputs_coverage: True
+            polarization: {{ 'dual-pol' if dual_pol else 'co-pol' }}
+            rtc:
+              output_type: gamma0
+            # OPTIONAL - to provide the number of processes when processing the bursts in parallel
+            # "0" means that the number will be automatically decided based on
+            # the number of cores, `OMP_NUM_THREADS` in environment setting,
+            # and the number of burst to process in runconfig
+            num_workers: {{ num_workers }}
+            geocoding:
+              memory_mode: auto
+              # Fields to populate the products' metadata required by
+              # CEOS Analysis Ready Data specifications
+              estimated_geometric_accuracy_bias_x: -0.72
+              estimated_geometric_accuracy_bias_y: -0.67
+              estimated_geometric_accuracy_stddev_x: 0.7
+              estimated_geometric_accuracy_stddev_y: 0.62
+            mosaicking:
+              mosaic_mode: first
+            browse_image_group:
+              browse_image_burst_height: 2048
